@@ -125,7 +125,7 @@ typedef struct
 {
     int32_t t_data[10];  // 40b sometimes used to hold offsets to con code
 
-    int32_t flags;                             // 4b
+    uint32_t flags;                            // 4b
     vec3_t  bpos;                              // 12b
     int32_t floorz, ceilingz;                  // 8b
     vec2_t lastv;                              // 8b
@@ -298,7 +298,7 @@ typedef struct
 } tiledata_t;
 
 
-enum sflags_t
+enum sflags_t : unsigned int
 {
     SFLAG_SHADOW        = 0x00000001,
     SFLAG_NVG           = 0x00000002,
@@ -331,11 +331,14 @@ enum sflags_t
     SFLAG_DAMAGEEVENT      = 0x04000000,
     SFLAG_NOWATERSECTOR    = 0x08000000,
     SFLAG_QUEUEDFORDELETE  = 0x10000000,
+    SFLAG_RESERVED         = 0x20000000,
+    SFLAG_RESERVED2        = 0x40000000,
+    SFLAG_RESERVED3        = 0x80000000,
 };
 
 // Custom projectiles "workslike" flags.
 // XXX: Currently not predefined from CON.
-enum pflags_t
+enum pflags_t : unsigned int
 {
     PROJECTILE_HITSCAN           = 0x00000001,
     PROJECTILE_RPG               = 0x00000002,
