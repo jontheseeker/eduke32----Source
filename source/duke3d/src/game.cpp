@@ -4204,8 +4204,13 @@ PALONLY:
 
         if (G_TileHasActor(pSprite->picnum))
         {
-            if ((unsigned)scrofs_action + ACTION_PARAM_COUNT > (unsigned)g_scriptSize)
+            if ((unsigned)scrofs_action + ACTION_PARAM_COUNT > (unsigned)g_scriptSize || apScript[scrofs_action + ACTION_PARAM_COUNT] != CON_ACTION)
+            {
+                if (scrofs_action)
+                    OSD_Printf("Sprite %d tile %d: invalid action at offset %d\n", i, pSprite->picnum, scrofs_action);
+
                 goto skip;
+            }
 
             int32_t viewtype = apScript[scrofs_action + ACTION_VIEWTYPE];
             uint16_t const action_flags = apScript[scrofs_action + ACTION_FLAGS];
@@ -4263,6 +4268,8 @@ PALONLY:
 
             t->picnum += frameOffset + apScript[scrofs_action + ACTION_STARTFRAME] + viewtype*curframe;
             // XXX: t->picnum can be out-of-bounds by bad user code.
+
+            Bassert((unsigned)t->picnum < MAXTILES);
 
             if (viewtype > 0)
                 while (tilesiz[t->picnum].x == 0 && t->picnum > 0)
