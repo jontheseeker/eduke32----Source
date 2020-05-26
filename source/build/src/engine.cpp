@@ -2738,6 +2738,11 @@ static int32_t setup_globals_cf1(usectorptr_t sec, int32_t pal, int32_t zd,
     if ((tilesiz[globalpicnum].x <= 0) || (tilesiz[globalpicnum].y <= 0)) return 1;
     if (waloff[globalpicnum] == 0) tileLoad(globalpicnum);
 
+    auto ht = classic_hightile(globalpicnum);
+    vec2_t upscale = {};
+    if (ht)
+        upscale = ht->upscale;
+
     globalbufplc = waloff[globalpicnum];
 
     globalshade = shade;
@@ -2787,7 +2792,7 @@ static int32_t setup_globals_cf1(usectorptr_t sec, int32_t pal, int32_t zd,
     globaly1 = (-globalx1-globaly1)*halfxdimen;
     globalx2 = (globalx2-globaly2)*halfxdimen;
 
-    sethlinesizes(picsiz[globalpicnum]&15,picsiz[globalpicnum]>>4,globalbufplc);
+    sethlinesizes((picsiz[globalpicnum]&15)+upscale.x,(picsiz[globalpicnum]>>4)+upscale.y,ht ? ht->ptr : globalbufplc);
 
     globalx2 += globaly2*(x1-1);
     globaly1 += globalx1*(x1-1);
@@ -3569,6 +3574,11 @@ static void fgrouscan(int32_t dax1, int32_t dax2, int32_t sectnum, char dastat)
     if ((tilesiz[globalpicnum].x <= 0) || (tilesiz[globalpicnum].y <= 0)) return;
     if (waloff[globalpicnum] == 0) tileLoad(globalpicnum);
 
+    auto ht = classic_hightile(globalpicnum);
+    vec2_t upscale = {};
+    if (ht)
+        upscale = ht->upscale;
+
     wal = (uwalltype *)&wall[sec->wallptr];
     wxi = wall[wal->point2].x - wal->x;
     wyi = wall[wal->point2].y - wal->y;
@@ -3647,8 +3657,9 @@ static void fgrouscan(int32_t dax1, int32_t dax2, int32_t sectnum, char dastat)
 
     intptr_t fj = FP_OFF(palookup[globalpal]);
 
-    setupslopevlin_alsotrans((picsiz[globalpicnum]&15) + ((picsiz[globalpicnum]>>4)<<8),
-                             waloff[globalpicnum],-ylookup[1]);
+    vec2_t logsz = { (picsiz[globalpicnum]&15)+upscale.x, (picsiz[globalpicnum]>>4)+upscale.y };
+
+    setupslopevlin_alsotrans(logsz.x + (logsz.y<<8), ht ? ht->ptr : waloff[globalpicnum],-ylookup[1]);
 
     l = Blrintf((globalzd)*(1.f/65536.f));
 
@@ -3876,6 +3887,11 @@ static void grouscan(int32_t dax1, int32_t dax2, int32_t sectnum, char dastat)
     if ((tilesiz[globalpicnum].x <= 0) || (tilesiz[globalpicnum].y <= 0)) return;
     if (waloff[globalpicnum] == 0) tileLoad(globalpicnum);
 
+    auto ht = classic_hightile(globalpicnum);
+    vec2_t upscale = {};
+    if (ht)
+        upscale = ht->upscale;
+
     wal = (uwallptr_t)&wall[sec->wallptr];
     wx = wall[wal->point2].x - wal->x;
     wy = wall[wal->point2].y - wal->y;
@@ -3949,8 +3965,9 @@ static void grouscan(int32_t dax1, int32_t dax2, int32_t sectnum, char dastat)
 
     j = FP_OFF(palookup[globalpal]);
 
-    setupslopevlin_alsotrans((picsiz[globalpicnum]&15) + ((picsiz[globalpicnum]>>4)<<8),
-                             waloff[globalpicnum],-ylookup[1]);
+    vec2_t logsz = { (picsiz[globalpicnum]&15)+upscale.x, (picsiz[globalpicnum]>>4)+upscale.y };
+
+    setupslopevlin_alsotrans(logsz.x + (logsz.y<<8), ht ? ht->ptr : waloff[globalpicnum],-ylookup[1]);
 
     l = (globalzd>>16);
 
