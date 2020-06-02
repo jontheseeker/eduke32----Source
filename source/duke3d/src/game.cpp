@@ -1357,10 +1357,11 @@ int32_t A_InsertSprite(int16_t whatsect,int32_t s_x,int32_t s_y,int32_t s_z,int1
 
     a.stayput = -1;
     a.extra   = -1;
-#ifdef POLYMER
-    a.lightId = -1;
-#endif
     a.owner = s_ow;
+
+#ifdef POLYMER
+    practor[newSprite].lightId = -1;
+#endif
 
     G_InitActor(newSprite, s_pn, 1);
 
@@ -1451,10 +1452,11 @@ int A_Spawn(int spriteNum, int tileNum)
 
         a.floorz   = sector[s.sectnum].floorz;
         a.ceilingz = sector[s.sectnum].ceilingz;
-        a.stayput  = a.extra = -1;
+        a.stayput = a.extra = -1;
+        a.florhit = a.lzsum = 0;
 
 #ifdef POLYMER
-        a.lightId = -1;
+        practor[newSprite].lightId = -1;
 #endif
 
         if ((s.cstat & 48)
@@ -2675,7 +2677,7 @@ int A_Spawn(int spriteNum, int tileNum)
             if (pSprite->yrepeat > 32)
             {
                 G_AddGameLight(0, newSprite, ((pSprite->yrepeat*tilesiz[pSprite->picnum].y)<<1), 32768, 255+(95<<8),PR_LIGHT_PRIO_MAX_GAME);
-                pActor->lightcount = 2;
+                practor[newSprite].lightcount = 2;
             }
             fallthrough__;
 #endif
