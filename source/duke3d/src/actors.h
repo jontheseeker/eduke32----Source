@@ -125,24 +125,27 @@ typedef struct
 {
     int32_t t_data[10];  // 40b sometimes used to hold offsets to con code
 
-    uint32_t flags;                            // 4b
-    vec3_t  bpos;                              // 12b
-    int32_t floorz, ceilingz;                  // 8b
-    vec2_t lastv;                              // 8b
-    int16_t picnum, ang, extra, owner;         // 8b
-    int16_t movflag, tempang, timetosleep;     // 6b
-    int16_t stayput;                           // 2b
-
-    uint8_t cgg, lasttransport;                // 2b
-    // NOTE: 'dispicnum' is updated every frame, not in sync with game tics!
-    int16_t dispicnum;                         // 2b
+    uint32_t flags;                 // 4b
+    vec3_t   bpos;                  // 12b
+    int32_t  floorz, ceilingz;      // 8b
+    vec2_t   lastv;                 // 8b
+    int16_t  picnum, ang;           // 4b
+    int16_t  extra, owner;          // 4b
+    int16_t  movflag, tempang;      // 4b
+    int16_t  timetosleep, stayput;  // 4b
+    uint16_t florhit, lzsum;        // 4b
+    int16_t  dispicnum;             // 2b NOTE: updated every frame, not in sync with game tics!    
+    uint8_t  cgg, lasttransport;    // 2b
+} actor_t;
 
 #ifdef POLYMER
-    int16_t lightId, lightmaxrange;  // 4b
+typedef struct  
+{
     _prlight *lightptr;              // 4b/8b  aligned on 96 bytes
-    uint8_t lightcount, filler[3];
+    int16_t lightId, lightmaxrange;  // 4b
+    uint8_t lightcount, filler[3];   // 4b
+} practor_t;
 #endif
-} actor_t;
 
 // note: fields in this struct DO NOT have to be in this order,
 // however if you add something to this struct, please make sure
@@ -369,6 +372,9 @@ enum pflags_t : unsigned int
 
 extern tiledata_t   g_tile[MAXTILES];
 extern actor_t      actor[MAXSPRITES];
+#ifdef POLYMER
+extern practor_t    practor[MAXSPRITES];
+#endif
 extern int32_t      block_deletesprite;
 extern int32_t      g_noEnemies;
 extern int32_t      otherp;

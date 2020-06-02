@@ -2063,8 +2063,8 @@ static void sv_postactordata(void)
         auto  s = (uspriteptr_t)&sprite[i];
 
 #ifdef POLYMER
-        a.lightptr = NULL;
-        a.lightId = -1;
+        practor[i].lightptr = NULL;
+        practor[i].lightId = -1;
 #endif
         if (a.flags & SFLAG_RESERVED)
         {
@@ -2455,8 +2455,8 @@ static void postloadplayer(int32_t savegamep)
     // change to Polymer later
     for (i=0; i<MAXSPRITES; i++)
     {
-        actor[i].lightptr = NULL;
-        actor[i].lightId = -1;
+        practor[i].lightptr = NULL;
+        practor[i].lightId = -1;
     }
 #endif
 }
