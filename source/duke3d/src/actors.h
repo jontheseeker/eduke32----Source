@@ -138,6 +138,8 @@ typedef struct
     uint8_t  cgg, lasttransport;    // 2b
 } actor_t;
 
+EDUKE32_STATIC_ASSERT(sizeof(actor_t) == 96);
+
 #ifdef POLYMER
 typedef struct  
 {
