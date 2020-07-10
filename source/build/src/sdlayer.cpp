@@ -449,6 +449,8 @@ int SDL_main(int argc, char *argv[])
 int main(int argc, char *argv[])
 #endif
 {
+    engineCreateAllocator();
+
     MicroProfileOnThreadCreate("Main");
     MicroProfileSetForceEnable(true);
     MicroProfileSetEnableAllGroups(true);

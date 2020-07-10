@@ -19,6 +19,8 @@ extern "C"
 }
 #endif // _WIN32
 
+sm_allocator g_sm_heap;
+
 int32_t g_borderless=2;
 
 // input
@@ -37,6 +39,59 @@ char    g_keyNameTable[NUMKEYS][24];
 int32_t r_maxfps = -1;
 int32_t r_maxfpsoffset;
 uint64_t g_frameDelay;
+
+
+void engineAllocatorStats(void)
+{
+#ifdef SMMALLOC_STATS_SUPPORT
+    for (unsigned int i = 0; i < g_sm_heap->GetBucketsCount(); i++)
+    {
+        uint32_t const elementSize = g_sm_heap->GetBucketElementSize(i);
+
+        OSD_Printf("\nbucket #%u (%d blocks of %d bytes):\n", i, g_sm_heap->GetBucketElementsCount(i), elementSize);
+
+        auto stats = g_sm_heap->GetBucketStats(i);
+
+        uint32_t const cacheHitCount = (uint32_t)stats->cacheHitCount.load();
+        uint32_t const hitCount      = (uint32_t)stats->hitCount.load();
+        uint32_t const missCount     = (uint32_t)stats->missCount.load();
+        uint32_t const freeCount     = (uint32_t)stats->freeCount.load();
+
+        OSD_Printf("%12s: %u\n", "cache hit", cacheHitCount);
+        OSD_Printf("%12s: %u\n", "hit",       hitCount);
+        OSD_Printf("%12s: %u\n", "miss",      missCount);
+        OSD_Printf("%12s: %u\n", "free",      freeCount);
+
+        uint32_t const useCount = cacheHitCount + hitCount + missCount - freeCount;
+        OSD_Printf("%12s: %u (%d bytes)\n", "in use", useCount, useCount * elementSize);
+    }
+#endif
+}
+
+static int osdfunc_bucketlist(osdcmdptr_t UNUSED(parm))
+{
+    UNREFERENCED_CONST_PARAMETER(parm);
+    engineAllocatorStats();
+    return OSDCMD_OK;
+}
+
+void engineDestroyAllocator(void)
+{
+    _sm_allocator_thread_cache_destroy(g_sm_heap);
+    _sm_allocator_destroy(g_sm_heap);
+}
+
+void engineCreateAllocator(void)
+{
+    // 8 buckets of 1MB each--we don't really need to burn a lot of memory here for this thing to do its job
+    g_sm_heap = _sm_allocator_create(SMM_MAX_BUCKET_COUNT, 1048576);
+    _sm_allocator_thread_cache_create(g_sm_heap, sm::CACHE_HOT, { 8192, 32768, 16384, 8192, 1024, 1024, 2048, 4096 });
+    atexit(engineDestroyAllocator);
+#ifdef SMMALLOC_STATS_SUPPORT
+    OSD_RegisterFunction("bucketlist", "bucketlist: list bucket statistics", osdfunc_bucketlist);
+#endif
+}
+
 
 void (*keypresscallback)(int32_t, int32_t);
 

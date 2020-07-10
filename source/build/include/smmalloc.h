@@ -29,7 +29,7 @@
 #include <initializer_list>
 #include <cstring>
 
-//#define SMMALLOC_STATS_SUPPORT
+#define SMMALLOC_STATS_SUPPORT
 
 
 

@@ -32,6 +32,7 @@
 *  - xxHash source repository : https://github.com/Cyan4973/xxHash
 */
 
+#include "compat.h"
 
 /* since xxhash.c can be included (via XXH_INLINE_ALL),
  * it's good practice to protect it with guard
@@ -106,9 +107,8 @@
 ***************************************/
 /*! Modify the local functions below should you wish to use some other memory routines
 *   for malloc(), free() */
-#include <stdlib.h>
-static void* XXH_malloc(size_t s) { return malloc(s); }
-static void  XXH_free  (void* p)  { free(p); }
+static void* XXH_malloc(size_t s) { return Bmalloc(s); }
+static void  XXH_free  (void* p)  { Bfree(p); }
 /*! and for memcpy() */
 #include <string.h>
 static void* XXH_memcpy(void* dest, const void* src, size_t size) { return memcpy(dest,src,size); }

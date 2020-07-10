@@ -175,10 +175,10 @@
 /*-************************************
 *  Memory routines
 **************************************/
-#include <stdlib.h>   /* malloc, calloc, free */
-#define ALLOC(s)          malloc(s)
-#define ALLOC_AND_ZERO(s) calloc(1,s)
-#define FREEMEM(p)        free(p)
+#include "compat.h"
+#define ALLOC(s)          Bmalloc(s)
+#define ALLOC_AND_ZERO(s) Bcalloc(1,s)
+#define FREEMEM(p)        Bfree(p)
 #include <string.h>   /* memset, memcpy */
 #define MEM_INIT(p,v,s)   memset((p),(v),(s))
 

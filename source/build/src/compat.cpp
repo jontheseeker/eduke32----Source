@@ -51,9 +51,8 @@ void xalloc_set_location(int32_t line, const char *file, const char *func)
 }
 #endif
 
-void *handle_memerr(void *p)
+void *handle_memerr(void)
 {
-    UNREFERENCED_PARAMETER(p);
     debug_break();
 
     if (g_MemErrHandler)
@@ -69,9 +68,17 @@ void *handle_memerr(void *p)
     EDUKE32_UNREACHABLE_SECTION(return &handle_memerr);
 }
 
-void set_memerr_handler(void(*handlerfunc)(int32_t, const char *, const char *))
+void set_memerr_handler(void (*handlerfunc)(int32_t, const char *, const char *)) { g_MemErrHandler = handlerfunc; }
+
+extern "C"
 {
-    g_MemErrHandler = handlerfunc;
+    char *Cxstrdup(const char *s) { return xstrdup(s); }
+    void *Cxmalloc(bsize_t const size) { return xmalloc(size); }
+    void *Cxcalloc(bsize_t const nmemb, bsize_t const size) { return xcalloc(nmemb, size); }
+    void *Cxrealloc(void *const ptr, bsize_t const size) { return xrealloc(ptr, size); }
+    void *Cxaligned_alloc(bsize_t const alignment, bsize_t const size) { return xaligned_alloc(alignment, size); }
+    void *Cxaligned_calloc(bsize_t const alignment, bsize_t const count, bsize_t const size) { return xaligned_calloc(alignment, count, size); }
+    void  Cxfree(void *const ptr) { Bfree(ptr); }
 }
 
 //
@@ -103,7 +110,7 @@ char *Bgethomedir(void)
         {
             if (loaded)
                 FreeLibrary(hShell32);
-            return Xstrdup(appdata);
+            return Bstrdup(appdata);
         }
     }
 
@@ -119,11 +126,11 @@ char *Bgethomedir(void)
     drv = strchr(cwd, ':');
     if (drv)
         drv[1] = '\0';
-    return Xstrdup(cwd);
+    return Bstrdup(cwd);
 #else
     char *e = getenv("HOME");
     if (!e) return NULL;
-    return Xstrdup(e);
+    return Bstrdup(e);
 #endif
 }
 
@@ -138,7 +145,7 @@ char *Bgetappdir(void)
         // trim off the filename
         char *slash = Bstrrchr(appdir, '\\');
         if (slash) slash[0] = 0;
-        dir = Xstrdup(appdir);
+        dir = Bstrdup(appdir);
     }
 
 #elif defined EDUKE32_OSX
@@ -155,7 +162,7 @@ char *Bgetappdir(void)
     {
         // again, remove executable name with dirname()
         // on FreeBSD dirname() seems to use some internal buffer
-        dir = Xstrdup(dirname(buf));
+        dir = Bstrdup(dirname(buf));
     }
 #elif defined __linux || defined EDUKE32_BSD
     char buf[PATH_MAX] = {0};
@@ -170,7 +177,7 @@ char *Bgetappdir(void)
         // remove executable name with dirname(3)
         // on Linux, dirname() will modify buf2 (cutting off executable name) and return it
         // on FreeBSD it seems to use some internal buffer instead.. anyway, just strdup()
-        dir = Xstrdup(dirname(buf2));
+        dir = Bstrdup(dirname(buf2));
     }
 #endif
 
@@ -179,7 +186,7 @@ char *Bgetappdir(void)
 
 int32_t Bcorrectfilename(char *filename, int32_t removefn)
 {
-    char *fn = Xstrdup(filename);
+    char *fn = Bstrdup(filename);
     char *tokarr[64], *first, *next = NULL;
 
     for (first=fn; *first; first++)
@@ -220,7 +227,7 @@ int32_t Bcorrectfilename(char *filename, int32_t removefn)
     if (trailslash) *(first++) = '/';
     *(first++) = 0;
 
-    Xfree(fn);
+    Bfree(fn);
     return 0;
 }
 
@@ -308,7 +315,7 @@ char *Bgetsystemdrives(void)
         number++;
     }
 
-    str = p = (char *)Xmalloc(1 + (3 * number));
+    str = p = (char *)Bmalloc(1 + (3 * number));
     number = 0;
     for (mask = 1; mask < 0x8000000l; mask <<= 1, number++)
     {
@@ -347,10 +354,10 @@ BDIR *Bopendir(const char *name)
     BDIR_real *dirr;
 #ifdef _MSC_VER
     char *t, *tt;
-    t = (char *)Xmalloc(Bstrlen(name) + 1 + 4);
+    t = (char *)Bmalloc(Bstrlen(name) + 1 + 4);
 #endif
 
-    dirr = (BDIR_real *)Xmalloc(sizeof(BDIR_real) + Bstrlen(name));
+    dirr = (BDIR_real *)Bmalloc(sizeof(BDIR_real) + Bstrlen(name));
 
 #ifdef _MSC_VER
     Bstrcpy(t, name);
@@ -364,17 +371,17 @@ BDIR *Bopendir(const char *name)
     *(++tt) = 0;
 
     dirr->dir = _findfirst(t, &dirr->fid);
-    Xfree(t);
+    Bfree(t);
     if (dirr->dir == -1)
     {
-        Xfree(dirr);
+        Bfree(dirr);
         return NULL;
     }
 #else
     dirr->dir = opendir(name);
     if (dirr->dir == NULL)
     {
-        Xfree(dirr);
+        Bfree(dirr);
         return NULL;
     }
 #endif
@@ -419,7 +426,7 @@ struct Bdirent *Breaddir(BDIR *dir)
     dirr->info.size = 0;
     dirr->info.mtime = 0;
 
-    char *fn = (char *)Xmalloc(Bstrlen(dirr->name) + 1 + dirr->info.namlen + 1);
+    char *fn = (char *)Bmalloc(Bstrlen(dirr->name) + 1 + dirr->info.namlen + 1);
     Bsprintf(fn, "%s/%s", dirr->name, dirr->info.name);
 
 #ifdef USE_PHYSFS
@@ -440,7 +447,7 @@ struct Bdirent *Breaddir(BDIR *dir)
     }
 #endif
 
-    Xfree(fn);
+    Bfree(fn);
 
     return &dirr->info;
 }
@@ -454,7 +461,7 @@ int32_t Bclosedir(BDIR *dir)
 #else
     closedir(dirr->dir);
 #endif
-    Xfree(dirr);
+    Bfree(dirr);
 
     return 0;
 }

@@ -514,10 +514,6 @@ typedef FILE BFILE;
 
 #define Bassert assert
 #define Brand rand
-#define Bmalloc malloc
-#define Bcalloc calloc
-#define Brealloc realloc
-#define Bfree free
 #define Bopen open
 #define Bclose close
 #define Bwrite write
@@ -586,11 +582,9 @@ typedef FILE BFILE;
 #endif
 
 #if defined(__cplusplus) && defined(_MSC_VER)
-# define Bstrdup _strdup
 # define Bchdir _chdir
 # define Bgetcwd _getcwd
 #else
-# define Bstrdup strdup
 # define Bchdir chdir
 # define Bgetcwd getcwd
 #endif
@@ -949,40 +943,128 @@ struct bad_arg_to_ARRAY_SIZE
 
 
 ////////// Memory management //////////
+#ifdef DEBUGGINGAIDS
+extern void xalloc_set_location(int32_t line, const char *file, const char *func);
+#endif
+void set_memerr_handler(void (*handlerfunc)(int32_t, const char *, const char *));
+void *handle_memerr(void);
 
-#if !defined NO_ALIGNED_MALLOC
-static FORCE_INLINE void *Baligned_alloc(const size_t alignment, const size_t size)
+#ifdef __cplusplus
+#include "smmalloc.h"
+
+extern sm_allocator g_sm_heap;
+
+#ifdef BITNESS64
+# define ALLOC_ALIGNMENT 16
+#else
+# define ALLOC_ALIGNMENT 8
+#endif
+
+static FORCE_INLINE char *xstrdup(const char *s)
 {
-#ifdef _WIN32
-    void *ptr = _aligned_malloc(size, alignment);
-#elif defined __APPLE__ || defined EDUKE32_BSD
-    void *ptr = NULL;
-    posix_memalign(&ptr, alignment, size);
-#else
-    void *ptr = memalign(alignment, size);
-#endif
-
-    return ptr;
+    int const len = Bstrlen(s)+1;
+    char *ptr = (char *)_sm_malloc(g_sm_heap, len, ALLOC_ALIGNMENT);
+    Bstrcpy(ptr, s);
+    ptr[len-1] = '\0';
+    return (EDUKE32_PREDICT_TRUE(ptr != NULL)) ? ptr : (char *)handle_memerr();
 }
+
+static FORCE_INLINE void *xmalloc(bsize_t const size)
+{
+    void *ptr = _sm_malloc(g_sm_heap, size, ALLOC_ALIGNMENT);
+    return (EDUKE32_PREDICT_TRUE(ptr != NULL)) ? ptr : handle_memerr();
+}
+
+static FORCE_INLINE void *xcalloc(bsize_t const nmemb, bsize_t const size)
+{
+    bsize_t const siz = nmemb * size;
+    void *ptr = _sm_malloc(g_sm_heap, siz, ALLOC_ALIGNMENT);
+    Bmemset(ptr, 0, siz);
+    return (EDUKE32_PREDICT_TRUE(ptr != NULL)) ? ptr : handle_memerr();
+}
+
+static FORCE_INLINE void *xrealloc(void * const ptr, bsize_t const size)
+{
+    void *newptr = _sm_realloc(g_sm_heap, ptr, size, ALLOC_ALIGNMENT);
+
+    // According to the C Standard,
+    //  - ptr == NULL makes realloc() behave like malloc()
+    //  - size == 0 make it behave like free() if ptr != NULL
+    // Since we want to catch an out-of-mem in the first case, this leaves:
+    return (EDUKE32_PREDICT_TRUE(newptr != NULL || size == 0)) ? newptr: handle_memerr();
+}
+
+#undef ALLOC_ALIGNMENT
+
+static FORCE_INLINE void *xaligned_alloc(bsize_t const alignment, bsize_t const size)
+{
+    void *ptr = _sm_malloc(g_sm_heap, size, alignment);
+    return (EDUKE32_PREDICT_TRUE(ptr != NULL)) ? ptr : handle_memerr();
+}
+
+static FORCE_INLINE void *xaligned_calloc(bsize_t const alignment, bsize_t const count, bsize_t const size)
+{
+    bsize_t const blocksize = count * size;
+    void *ptr = _sm_malloc(g_sm_heap, blocksize, alignment);
+    if (EDUKE32_PREDICT_TRUE(ptr != NULL))
+    {
+        Bmemset(ptr, 0, blocksize);
+        return ptr;
+    }
+    return handle_memerr();
+}
+
+#define Xstrdup(s)    (EDUKE32_ALLOC_PREAMBLE xstrdup(s))
+#define Xmalloc(size) (EDUKE32_ALLOC_PREAMBLE xmalloc(size))
+#define Xcalloc(nmemb, size) (EDUKE32_ALLOC_PREAMBLE xcalloc(nmemb, size))
+#define Xrealloc(ptr, size)  (EDUKE32_ALLOC_PREAMBLE xrealloc(ptr, size))
+#define Xaligned_alloc(alignment, size) (EDUKE32_ALLOC_PREAMBLE xaligned_alloc(alignment, size))
+#define Xaligned_calloc(alignment, count, size) (EDUKE32_ALLOC_PREAMBLE xaligned_calloc(alignment, count, size))
+#define Xfree(ptr) _sm_free(g_sm_heap, ptr)
+#define Xaligned_free(ptr) _sm_free(g_sm_heap, ptr)
 #else
-# define Baligned_alloc(alignment, size) Bmalloc(size)
+char *Cxstrdup(const char *s);
+void *Cxmalloc(bsize_t const size);
+void *Cxcalloc(bsize_t const nmemb, bsize_t const size);
+void *Cxrealloc(void * const ptr, bsize_t const size);
+void *Cxaligned_alloc(bsize_t const alignment, bsize_t const size);
+void *Cxaligned_calloc(bsize_t const alignment, bsize_t const count, bsize_t const size);
+void Cxfree(void * const ptr);
+
+#define Xstrdup(s)    (EDUKE32_ALLOC_PREAMBLE Cxstrdup(s))
+#define Xmalloc(size) (EDUKE32_ALLOC_PREAMBLE Cxmalloc(size))
+#define Xcalloc(nmemb, size) (EDUKE32_ALLOC_PREAMBLE Cxcalloc(nmemb, size))
+#define Xrealloc(ptr, size)  (EDUKE32_ALLOC_PREAMBLE Cxrealloc(ptr, size))
+#define Xaligned_alloc(alignment, size) (EDUKE32_ALLOC_PREAMBLE Cxaligned_alloc(alignment, size))
+#define Xaligned_calloc(alignment, count, size) (EDUKE32_ALLOC_PREAMBLE Cxaligned_calloc(alignment, count, size))
+#define Xfree(ptr) Cxfree(ptr)
+#define Xaligned_free(ptr) Cxfree(ptr)
 #endif
 
-#if defined _WIN32 && !defined NO_ALIGNED_MALLOC
-# define Baligned_free _aligned_free
+#ifdef DEBUGGINGAIDS
+# define EDUKE32_ALLOC_PREAMBLE xalloc_set_location(__LINE__, __FILE__, EDUKE32_FUNCTION),
 #else
-# define Baligned_free Bfree
+# define EDUKE32_ALLOC_PREAMBLE
 #endif
+
+#define Bstrdup Xstrdup
+#define Bmalloc Xmalloc
+#define Bcalloc Xcalloc
+#define Brealloc Xrealloc
+#define Baligned_alloc Xaligned_alloc
+#define Baligned_calloc Xaligned_calloc
+#define Bfree Xfree
+#define Baligned_free Xaligned_free
 
 
 ////////// Pointer management //////////
 
 #define DO_FREE_AND_NULL(var) do { \
-    Xfree(var); (var) = NULL; \
+    Bfree(var); (var) = NULL; \
 } while (0)
 
 #define ALIGNED_FREE_AND_NULL(var) do { \
-    Xaligned_free(var); (var) = NULL; \
+    Baligned_free(var); (var) = NULL; \
 } while (0)
 
 
@@ -1331,81 +1413,6 @@ char *Bstrupr(char *);
 int Bgetpagesize(void);
 size_t Bgetsysmemsize(void);
 
-////////// PANICKING ALLOCATION WRAPPERS //////////
-
-#ifdef DEBUGGINGAIDS
-extern void xalloc_set_location(int32_t line, const char *file, const char *func);
-#endif
-void set_memerr_handler(void (*handlerfunc)(int32_t, const char *, const char *));
-void *handle_memerr(void *);
-
-static FORCE_INLINE char *xstrdup(const char *s)
-{
-    char *ptr = Bstrdup(s);
-    return (EDUKE32_PREDICT_TRUE(ptr != NULL)) ? ptr : (char *)handle_memerr(ptr);
-}
-
-static FORCE_INLINE void *xmalloc(const bsize_t size)
-{
-    void *ptr = Bmalloc(size);
-    return (EDUKE32_PREDICT_TRUE(ptr != NULL)) ? ptr : handle_memerr(ptr);
-}
-
-static FORCE_INLINE void *xcalloc(const bsize_t nmemb, const bsize_t size)
-{
-    void *ptr = Bcalloc(nmemb, size);
-    return (EDUKE32_PREDICT_TRUE(ptr != NULL)) ? ptr : handle_memerr(ptr);
-}
-
-static FORCE_INLINE void *xrealloc(void * const ptr, const bsize_t size)
-{
-    void *newptr = Brealloc(ptr, size);
-
-    // According to the C Standard,
-    //  - ptr == NULL makes realloc() behave like malloc()
-    //  - size == 0 make it behave like free() if ptr != NULL
-    // Since we want to catch an out-of-mem in the first case, this leaves:
-    return (EDUKE32_PREDICT_TRUE(newptr != NULL || size == 0)) ? newptr: handle_memerr(ptr);
-}
-
-#if !defined NO_ALIGNED_MALLOC
-static FORCE_INLINE void *xaligned_alloc(const bsize_t alignment, const bsize_t size)
-{
-    void *ptr = Baligned_alloc(alignment, size);
-    return (EDUKE32_PREDICT_TRUE(ptr != NULL)) ? ptr : handle_memerr(ptr);
-}
-
-static FORCE_INLINE void *xaligned_calloc(const bsize_t alignment, const bsize_t count, const bsize_t size)
-{
-    bsize_t const blocksize = count * size;
-    void *ptr = Baligned_alloc(alignment, blocksize);
-    if (EDUKE32_PREDICT_TRUE(ptr != NULL))
-    {
-        Bmemset(ptr, 0, blocksize);
-        return ptr;
-    }
-    return handle_memerr(ptr);
-}
-#else
-# define xaligned_alloc(alignment, size) xmalloc(size)
-# define xaligned_calloc(alignment, count, size) xcalloc(count, size)
-#endif
-
-#ifdef DEBUGGINGAIDS
-# define EDUKE32_PRE_XALLOC xalloc_set_location(__LINE__, __FILE__, EDUKE32_FUNCTION),
-#else
-# define EDUKE32_PRE_XALLOC
-#endif
-
-#define Xstrdup(s)    (EDUKE32_PRE_XALLOC xstrdup(s))
-#define Xmalloc(size) (EDUKE32_PRE_XALLOC xmalloc(size))
-#define Xcalloc(nmemb, size) (EDUKE32_PRE_XALLOC xcalloc(nmemb, size))
-#define Xrealloc(ptr, size)  (EDUKE32_PRE_XALLOC xrealloc(ptr, size))
-#define Xaligned_alloc(alignment, size) (EDUKE32_PRE_XALLOC xaligned_alloc(alignment, size))
-#define Xaligned_calloc(alignment, count, size) (EDUKE32_PRE_XALLOC xaligned_calloc(alignment, count, size))
-#define Xfree(ptr) (Bfree(ptr))
-#define Xaligned_free(ptr) (Baligned_free(ptr))
-
 #ifdef __cplusplus
 }
 #endif
@@ -1417,7 +1424,7 @@ static inline void maybe_grow_buffer(char ** const buffer, int32_t * const buffe
 {
     if (newsize > *buffersize)
     {
-        *buffer = (char *)Xrealloc(*buffer, newsize);
+        *buffer = (char *)Brealloc(*buffer, newsize);
         *buffersize = newsize;
     }
 }
