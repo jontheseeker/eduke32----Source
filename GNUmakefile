@@ -243,6 +243,9 @@ engine_objs := \
     scriptfile.cpp \
     sjson.cpp \
     smalltextfont.cpp \
+    smmalloc.cpp \
+    smmalloc_generic.cpp \
+    smmalloc_tls.cpp \
     softsurface.cpp \
     texcache.cpp \
     textfont.cpp \
