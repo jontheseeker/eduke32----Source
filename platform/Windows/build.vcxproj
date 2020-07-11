@@ -289,6 +289,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\source\build\src\allocator.cpp" />
     <ClCompile Include="..\..\source\build\src\animvpx.cpp" />
     <ClCompile Include="..\..\source\build\src\baselayer.cpp" />
     <ClCompile Include="..\..\source\build\src\cache1d.cpp" />
@@ -355,6 +356,7 @@
     </ClCompile>
     <ClCompile Include="..\..\source\build\src\polymer.cpp" />
     <ClCompile Include="..\..\source\build\src\polymost.cpp" />
+    <ClCompile Include="..\..\source\build\src\poolallocator.cpp" />
     <ClCompile Include="..\..\source\build\src\pragmas.cpp" />
     <ClCompile Include="..\..\source\build\src\rawinput.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -420,6 +422,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\source\build\include\a.h" />
+    <ClInclude Include="..\..\source\build\include\allocator.h" />
     <ClInclude Include="..\..\source\build\include\animvpx.h" />
     <ClInclude Include="..\..\source\build\include\baselayer.h" />
     <ClInclude Include="..\..\source\build\include\build.h" />
@@ -472,6 +475,7 @@
     <ClInclude Include="..\..\source\build\include\pngwrite.h" />
     <ClInclude Include="..\..\source\build\include\polymer.h" />
     <ClInclude Include="..\..\source\build\include\polymost.h" />
+    <ClInclude Include="..\..\source\build\include\poolallocator.h" />
     <ClInclude Include="..\..\source\build\include\pragmas.h" />
     <ClInclude Include="..\..\source\build\include\pragmas_arm.h" />
     <ClInclude Include="..\..\source\build\include\pragmas_ppc.h" />
@@ -490,6 +494,7 @@
     <ClInclude Include="..\..\source\build\include\sjson.h" />
     <ClInclude Include="..\..\source\build\include\smmalloc.h" />
     <ClInclude Include="..\..\source\build\include\softsurface.h" />
+    <ClInclude Include="..\..\source\build\include\stacklist.h" />
     <ClInclude Include="..\..\source\build\include\texcache.h" />
     <ClInclude Include="..\..\source\build\include\tilepacker.h" />
     <ClInclude Include="..\..\source\build\include\timer.h" />

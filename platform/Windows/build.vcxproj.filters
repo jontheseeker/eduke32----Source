@@ -206,6 +206,12 @@
     <ClCompile Include="..\..\source\build\src\screentext.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\build\src\poolallocator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\build\src\allocator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\source\build\src\smmalloc.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -462,6 +468,15 @@
     </ClInclude>
     <ClInclude Include="..\..\source\build\include\miniz.h">
       <Filter>Header Files\miniz</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\build\include\allocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\build\include\poolallocator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\build\include\stacklist.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\build\include\smmalloc.h">
       <Filter>Header Files</Filter>

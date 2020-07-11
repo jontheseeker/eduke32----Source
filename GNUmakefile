@@ -204,6 +204,7 @@ endif
 
 engine_objs := \
     2d.cpp \
+    allocator.cpp \
     baselayer.cpp \
     cache1d.cpp \
     clip.cpp \
@@ -236,6 +237,7 @@ engine_objs := \
     polymost.cpp \
     polymost1Frag.glsl \
     polymost1Vert.glsl \
+    poolallocator.cpp \
     pragmas.cpp \
     rev.cpp \
     screenshot.cpp \
