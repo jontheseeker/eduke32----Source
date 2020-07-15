@@ -1067,6 +1067,10 @@ void Cxfree(void * const ptr);
     Baligned_free(var); (var) = NULL; \
 } while (0)
 
+#define DO_DELETE_AND_NULL(var) do { \
+    delete (var); (var) = NULL; \
+} while (0)
+
 
 ////////// Data serialization //////////
 

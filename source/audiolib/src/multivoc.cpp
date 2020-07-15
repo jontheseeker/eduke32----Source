@@ -41,6 +41,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "linklist.h"
 #include "osd.h"
 #include "pitch.h"
+#include "poolallocator.h"
 #include "pragmas.h"
 
 #ifdef HAVE_XMP
@@ -49,6 +50,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 int MV_XMPInterpolation = XMP_INTERP_NEAREST;
 #endif
+
+static PoolAllocator *MV_Voices;
 
 static void MV_StopVoice(VoiceNode *voice);
 static void MV_ServiceVoc(void);
@@ -82,9 +85,7 @@ static int MV_ReverseStereo;
 static int MV_BufferEmpty[MV_NUMBEROFBUFFERS];
 char *MV_MixBuffer[(MV_NUMBEROFBUFFERS << 1) + 1];
 
-VoiceNode *MV_Voices;
 VoiceNode  VoiceList;
-VoiceNode  VoicePool;
 
 static int MV_MixPage;
 
@@ -209,10 +210,10 @@ static void MV_CleanupVoice(VoiceNode *voice)
 
 static void MV_StopVoice(VoiceNode *voice)
 {
-    MV_CleanupVoice(voice);
     MV_Lock();
-    // move the voice from the play list to the free list
-    LL::Move(voice, &VoicePool);
+    LL::Remove(voice);
+    MV_CleanupVoice(voice);
+    MV_Voices->Free(voice);
     MV_Unlock();
 }
 
@@ -285,8 +286,9 @@ static void MV_ServiceVoc(void)
             // Is this voice done?
             if (!MV_Mix(voice, MV_MixPage))
             {
+                LL::Remove(voice);
                 MV_CleanupVoice(voice);
-                LL::Move(voice, &VoicePool);
+                MV_Voices->Free(voice);
             }
         }
         while ((voice = next) != &VoiceList);
@@ -305,8 +307,9 @@ static void MV_ServiceVoc(void)
 
     if (MusicVoice && !MV_Mix(MusicVoice, MV_MixPage + MV_NumberOfBuffers))
     {
+        LL::Remove(MusicVoice);
         MV_CleanupVoice(MusicVoice);
-        LL::Move(MusicVoice, &VoicePool);
+        MV_Voices->Free(MusicVoice);
     }
 }
 
@@ -411,12 +414,7 @@ int MV_VoicesPlaying(void)
         return 0;
 
     MV_Lock();
-
-    int NumVoices = 0;
-
-    for (auto voice = VoiceList.next; voice != &VoiceList; voice = voice->next)
-        NumVoices++;
-
+    int NumVoices = (MV_MaxVoices * sizeof(VoiceNode) - MV_Voices->Available()) / sizeof(VoiceNode);
     MV_Unlock();
 
     return NumVoices;
@@ -450,19 +448,20 @@ static inline void MV_FinishAllocation(VoiceNode* voice, uint32_t const allocsiz
     voice->rawdatasiz = allocsize;
 }
 
+
 VoiceNode *MV_AllocVoice(int priority, uint32_t allocsize /* = 0 */)
 {
     MV_Lock();
 
     // Check if we have any free voices
-    if (LL::Empty(&VoicePool))
+    if (!MV_VoiceAvailable(priority))
     {
         auto voice = MV_GetLowestPriorityVoice();
 
         if (voice != &VoiceList && voice->priority <= priority && voice->handle >= MV_MINVOICEHANDLE)
             MV_Kill(voice->handle);
 
-        if (LL::Empty(&VoicePool))
+        if (!MV_VoiceAvailable(priority))
         {
             // No free voices
             MV_Unlock();
@@ -470,10 +469,13 @@ VoiceNode *MV_AllocVoice(int priority, uint32_t allocsize /* = 0 */)
         }
     }
 
-    auto voice = VoicePool.next;
-    LL::Remove(voice);
-
+    auto voice = (VoiceNode *)MV_Voices->Allocate(sizeof(VoiceNode));
     MV_Unlock();
+
+    if (voice == nullptr)
+        return nullptr;
+
+    Bmemset(voice, 0, sizeof(VoiceNode));
 
     int vhan = MV_MINVOICEHANDLE;
 
@@ -498,7 +500,7 @@ VoiceNode *MV_AllocVoice(int priority, uint32_t allocsize /* = 0 */)
 int MV_VoiceAvailable(int priority)
 {
     // Check if we have any free voices
-    if (!LL::Empty(&VoicePool))
+    if (MV_Voices->Available() != 0)
         return TRUE;
 
     MV_Lock();
@@ -834,20 +836,14 @@ int MV_Init(int soundcard, int MixRate, int Voices, int numchannels, void *initd
 
     MV_SetErrorCode(MV_Ok);
 
-    int const totalmem = Voices * sizeof(VoiceNode) + (MV_TOTALBUFFERSIZE * sizeof(int16_t)) + (MV_MIXBUFFERSIZE * numchannels * sizeof(int16_t));
-
+    int const totalmem = (MV_TOTALBUFFERSIZE * sizeof(int16_t)) + (MV_MIXBUFFERSIZE * numchannels * sizeof(int16_t));
     char *ptr = (char *) Xaligned_calloc(16, 1, totalmem);
 
-    MV_Voices = (VoiceNode *)ptr;
-    ptr += Voices * sizeof(VoiceNode);
-
     MV_MaxVoices = Voices;
+    MV_Voices = new PoolAllocator(Voices * sizeof(VoiceNode), sizeof(VoiceNode));
+    MV_Voices->Init();
 
     LL::Reset((VoiceNode*) &VoiceList);
-    LL::Reset((VoiceNode*) &VoicePool);
-
-    for (int index = 0; index < Voices; index++)
-        LL::Insert(&VoicePool, &MV_Voices[index]);
 
 #ifdef ASS_REVERSESTEREO
     MV_SetReverseStereo(FALSE);
@@ -862,8 +858,7 @@ int MV_Init(int soundcard, int MixRate, int Voices, int numchannels, void *initd
 
     if (MV_ErrorCode != MV_Ok)
     {
-        ALIGNED_FREE_AND_NULL(MV_Voices);
-
+        DO_DELETE_AND_NULL(MV_Voices);
         return MV_Error;
     }
 
@@ -923,10 +918,8 @@ int MV_Shutdown(void)
     SoundDriver_PCM_Shutdown();
 
     // Free any voices we allocated
-    ALIGNED_FREE_AND_NULL(MV_Voices);
-
     LL::Reset((VoiceNode*) &VoiceList);
-    LL::Reset((VoiceNode*) &VoicePool);
+    DO_DELETE_AND_NULL(MV_Voices);
 
     MV_MaxVoices = 1;
 

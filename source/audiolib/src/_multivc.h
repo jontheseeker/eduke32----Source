@@ -52,9 +52,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 #define MIX_VOLUME(volume) ((max(0, min((volume), 255)) * (MV_MAXVOLUME + 1)) >> 8)
 
-extern struct VoiceNode *MV_Voices;
 extern struct VoiceNode  VoiceList;
-extern struct VoiceNode  VoicePool;
 
 extern fix16_t MV_GlobalVolume;
 extern fix16_t MV_VolumeSmoothFactor;
