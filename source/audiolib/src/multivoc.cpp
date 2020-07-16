@@ -104,6 +104,8 @@ int MV_Locked;
 char *MV_MusicBuffer;
 static void (*MV_MusicCallback)(void);
 
+static VoiceNode **MV_Handles;
+
 static bool MV_Mix(VoiceNode * const voice, int const buffer)
 {
     if (voice->length == 0 && voice->GetSound(voice) != KeepPlaying)
@@ -199,6 +201,8 @@ static void MV_CleanupVoice(VoiceNode *voice)
             voice->rawdatasiz = 0;
             break;
     }
+
+    MV_Handles[voice->handle - MV_MINVOICEHANDLE] = nullptr;
 
     voice->handle = 0;
     voice->length = 0;
@@ -319,18 +323,9 @@ static VoiceNode *MV_GetVoice(int handle)
         return nullptr;
     }
 
-    MV_Lock();
+    if (MV_Handles[handle - MV_MINVOICEHANDLE] != nullptr)
+        return MV_Handles[handle - MV_MINVOICEHANDLE];
 
-    for (auto voice = VoiceList.next; voice != &VoiceList; voice = voice->next)
-    {
-        if (handle == voice->handle)
-        {
-            MV_Unlock();
-            return voice;
-        }
-    }
-
-    MV_Unlock();
     MV_SetErrorCode(MV_VoiceNotFound);
     return nullptr;
 }
@@ -357,7 +352,8 @@ static inline void MV_EndService(void) { MV_Unlock(); }
 
 int MV_VoicePlaying(int handle)
 {
-    return (MV_Installed && MV_GetVoice(handle)) ? TRUE : FALSE;
+    Bassert(handle <= MV_MaxVoices);
+    return (MV_Installed && MV_Handles[handle - MV_MINVOICEHANDLE] != nullptr) ? TRUE : FALSE;
 }
 
 int MV_KillAllVoices(void)
@@ -454,25 +450,29 @@ VoiceNode *MV_AllocVoice(int priority, uint32_t allocsize /* = 0 */)
     }
 
     auto voice = (VoiceNode *)MV_Voices->Allocate(sizeof(VoiceNode));
-    MV_Unlock();
 
     if (voice == nullptr)
+    {
+        MV_Unlock();
         return nullptr;
+    }
 
     Bmemset(voice, 0, sizeof(VoiceNode));
 
-    int vhan = MV_MINVOICEHANDLE;
+    int handle = MV_MINVOICEHANDLE;
 
     // Find a free voice handle
     do
     {
-        if (++vhan < MV_MINVOICEHANDLE || vhan > MV_MaxVoices)
-            vhan = MV_MINVOICEHANDLE;
-    } while (MV_VoicePlaying(vhan));
+        if (++handle < MV_MINVOICEHANDLE || handle > MV_MaxVoices)
+            handle = MV_MINVOICEHANDLE;
+    } while (MV_Handles[handle - MV_MINVOICEHANDLE] != nullptr);
+    MV_Handles[handle - MV_MINVOICEHANDLE] = voice;
+    MV_Unlock();
 
     voice->length = 0;
     voice->BlockLength = 0;
-    voice->handle = vhan;
+    voice->handle = handle;
     voice->next = voice->prev = nullptr;
 
     if (allocsize)
@@ -826,12 +826,14 @@ int MV_Init(int soundcard, int MixRate, int Voices, int numchannels, void *initd
     int const totalmem = (MV_TOTALBUFFERSIZE * sizeof(int16_t)) + (MV_MIXBUFFERSIZE * numchannels * sizeof(int16_t));
     char *ptr = (char *) Xaligned_calloc(16, 1, totalmem);
 
+    Bassert(Voices < MV_MAXVOICES);
+
     MV_MaxVoices = Voices;
     MV_Voices = new PoolAllocator(Voices * sizeof(VoiceNode), sizeof(VoiceNode));
     MV_Voices->Init();
 
     LL::Reset((VoiceNode*) &VoiceList);
-
+    MV_Handles = (VoiceNode **)Bcalloc(Voices, sizeof(intptr_t));
 #ifdef ASS_REVERSESTEREO
     MV_SetReverseStereo(FALSE);
 #endif
@@ -907,6 +909,8 @@ int MV_Shutdown(void)
     // Free any voices we allocated
     LL::Reset((VoiceNode*) &VoiceList);
     DO_DELETE_AND_NULL(MV_Voices);
+
+    DO_FREE_AND_NULL(MV_Handles);
 
     MV_MaxVoices = 1;
 

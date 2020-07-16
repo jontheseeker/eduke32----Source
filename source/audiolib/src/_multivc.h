@@ -109,6 +109,8 @@ private:
 #define MV_NUMBEROFBUFFERS   32
 #define MV_TOTALBUFFERSIZE   ( MV_MIXBUFFERSIZE * MV_NUMBEROFBUFFERS )
 
+#define MV_MAXVOICES 256
+
 typedef enum : bool
 {
     NoMoreData,
