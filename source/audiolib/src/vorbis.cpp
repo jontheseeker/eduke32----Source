@@ -411,12 +411,6 @@ void MV_ReleaseVorbisVoice(VoiceNode *voice)
 
     auto vd = (vorbis_data *)voice->rawdataptr;
 
-    if (MV_LazyAlloc)
-    {
-        ov_clear(&vd->vf);
-        return;
-    }
-
     voice->rawdataptr = nullptr;
     voice->rawdatasiz = 0;
     ov_clear(&vd->vf);

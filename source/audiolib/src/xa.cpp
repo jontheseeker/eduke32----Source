@@ -457,9 +457,6 @@ void MV_ReleaseXAVoice(VoiceNode * voice)
 {
     Bassert(voice->wavetype == FMT_XA && voice->rawdataptr != nullptr && voice->rawdatasiz == sizeof(xa_data));
 
-    if (MV_LazyAlloc)
-        return;
-
     auto xad = (xa_data *)voice->rawdataptr;
 
     voice->rawdataptr = nullptr;

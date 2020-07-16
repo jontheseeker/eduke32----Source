@@ -212,7 +212,6 @@ extern int MV_Installed;
 extern int MV_MixRate;
 extern char *MV_MusicBuffer;
 extern int MV_BufferSize;
-extern int MV_LazyAlloc;
 
 extern int MV_MaxVoices;
 extern int MV_Channels;

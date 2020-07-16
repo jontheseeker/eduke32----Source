@@ -139,17 +139,12 @@ void MV_ReleaseXMPVoice(VoiceNode * voice)
 
     auto ctx = (xmp_context)voice->rawdataptr;
 
-    if (!MV_LazyAlloc)
-    {
-        voice->rawdataptr = nullptr;
-        voice->rawdatasiz = 0;
-    }
+    voice->rawdataptr = nullptr;
+    voice->rawdatasiz = 0;
 
     xmp_end_player(ctx);
     xmp_release_module(ctx);
-
-    if (!MV_LazyAlloc)
-        xmp_free_context(ctx);
+    xmp_free_context(ctx);
 }
 
 void MV_SetXMPInterpolation(void)

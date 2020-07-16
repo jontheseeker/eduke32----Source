@@ -76,8 +76,6 @@ int MV_Channels = 1;
 int MV_MixRate;
 void *MV_InitDataPtr;
 
-int MV_LazyAlloc = true;
-
 #ifdef ASS_REVERSESTEREO
 static int MV_ReverseStereo;
 #endif
@@ -434,20 +432,6 @@ static inline VoiceNode *MV_GetLowestPriorityVoice(void)
     return voice;
 }
 
-static inline void MV_FinishAllocation(VoiceNode* voice, uint32_t const allocsize)
-{
-    if (!allocsize || (voice->rawdataptr != nullptr && voice->rawdatasiz == allocsize))
-        return;
-    else if (voice->rawdataptr != nullptr && voice->wavetype >= FMT_VORBIS)
-    {
-        // this is sort of a hack... wavetypes less than FMT_VORBIS never do their own allocations, so don't bother trying to free them
-        ALIGNED_FREE_AND_NULL(voice->rawdataptr);
-    }
-
-    voice->rawdataptr = Xaligned_calloc(16, 1, allocsize);
-    voice->rawdatasiz = allocsize;
-}
-
 
 VoiceNode *MV_AllocVoice(int priority, uint32_t allocsize /* = 0 */)
 {
@@ -492,7 +476,10 @@ VoiceNode *MV_AllocVoice(int priority, uint32_t allocsize /* = 0 */)
     voice->next = voice->prev = nullptr;
 
     if (allocsize)
-        MV_FinishAllocation(voice, allocsize);
+    {
+        voice->rawdataptr = Baligned_alloc(16, allocsize);
+        voice->rawdatasiz = allocsize;
+    }
 
     return voice;
 }
