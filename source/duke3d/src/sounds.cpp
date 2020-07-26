@@ -30,6 +30,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include "vfs.h"
 
 int32_t g_numEnvSoundsPlaying, g_highestSoundIdx;
+static bool g_dukeTalk;
 
 static char *MusicPtr;
 
@@ -448,6 +449,8 @@ void S_Cleanup(void)
         // for which there was no open slot to keep track of the voice
         if (num >= (MAXSOUNDS*MAXSOUNDINSTANCES))
         {
+            if (g_sounds[num-(MAXSOUNDS*MAXSOUNDINSTANCES)]->m & SF_TALK)
+                g_dukeTalk = false;
 #ifdef CACHING_DOESNT_SUCK
             --g_soundlocks[num-(MAXSOUNDS*MAXSOUNDINSTANCES)];
 #endif
@@ -470,6 +473,9 @@ void S_Cleanup(void)
 #endif
         if (snd->num > 0)
             --snd->num;
+
+        if (snd->m & SF_TALK && g_dukeTalk)
+            g_dukeTalk = false;
 
         // MUSICANDSFX uses t_data[0] to control restarting the sound
         // CLEAR_SOUND_T0
@@ -705,13 +711,9 @@ int S_PlaySound3D(int num, int spriteNum, const vec3_t *pos)
             if ((ud.config.VoiceToggle & 4) != 4)
                 return -1;
         }
-        else if ((ud.config.VoiceToggle & 1) != 1)
-            return -1;
-
         // don't play if any Duke talk sounds are already playing
-        for (j = 0; j <= g_highestSoundIdx; ++j)
-            if ((g_sounds[j]->m & SF_TALK) && g_sounds[j]->num > 0)
-                return -1;
+        else if (g_dukeTalk || !(ud.config.VoiceToggle & 1))
+            return -1;
     }
     else if ((snd->m & (SF_DTAG|SF_GLOBAL)) == SF_DTAG)  // Duke-Tag sound
     {
@@ -812,6 +814,9 @@ int S_PlaySound3D(int num, int spriteNum, const vec3_t *pos)
 
     S_SetProperties(&snd->voices[sndSlot], spriteNum, voice, sndist >> 6, 0);
 
+    if (snd->m & SF_TALK)
+        g_dukeTalk = true;
+
     return voice;
 }
 
@@ -866,7 +871,11 @@ int S_PlaySound(int num)
     }
 
     snd->num++;
+
     S_SetProperties(&snd->voices[sndnum], -1, voice, 255-LOUDESTVOLUME, 0);
+
+    if (snd->m & SF_TALK)
+        g_dukeTalk = true;
 
     return voice;
 }
