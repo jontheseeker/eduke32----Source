@@ -5775,9 +5775,14 @@ repeatcase:
                 g_errorCnt++;
                 k = MAXSOUNDS-1;
             }
-            else if (EDUKE32_PREDICT_FALSE(g_sounds[k].filename != NULL))
+
+            S_AllocIndexes(k);
+
+            if (EDUKE32_PREDICT_TRUE(g_sounds[k] == &nullsound))
+                g_sounds[k] = (sound_t *)Xcalloc(1, sizeof(sound_t));
+            else
             {
-                initprintf("%s:%d: warning: sound %d already defined (%s)\n",g_scriptFileName,g_lineNumber,k,g_sounds[k].filename);
+                initprintf("%s:%d: warning: sound %d already defined (%s)\n",g_scriptFileName,g_lineNumber,k,g_sounds[k]->filename);
                 g_warningCnt++;
             }
 
@@ -5785,15 +5790,15 @@ repeatcase:
             i = 0;
             C_SkipComments();
 
-            if (g_sounds[k].filename == NULL)
-                g_sounds[k].filename = (char *)Xcalloc(BMAX_PATH,sizeof(uint8_t));
+            if (g_sounds[k]->filename == NULL)
+                g_sounds[k]->filename = (char *)Xcalloc(BMAX_PATH,sizeof(uint8_t));
 
             if (*textptr == '\"')
             {
                 textptr++;
                 while (*textptr && *textptr != '\"')
                 {
-                    g_sounds[k].filename[i++] = *textptr++;
+                    g_sounds[k]->filename[i++] = *textptr++;
                     if (EDUKE32_PREDICT_FALSE(i >= BMAX_PATH-1))
                     {
                         initprintf("%s:%d: error: sound filename exceeds limit of %d characters.\n",g_scriptFileName,g_lineNumber,BMAX_PATH-1);
@@ -5806,7 +5811,7 @@ repeatcase:
             }
             else while (*textptr != ' ' && *textptr != '\t' && *textptr != '\r' && *textptr != '\n')
             {
-                g_sounds[k].filename[i++] = *textptr++;
+                g_sounds[k]->filename[i++] = *textptr++;
                 if (EDUKE32_PREDICT_FALSE(i >= BMAX_PATH-1))
                 {
                     initprintf("%s:%d: error: sound filename exceeds limit of %d characters.\n",g_scriptFileName,g_lineNumber,BMAX_PATH-1);
@@ -5815,30 +5820,27 @@ repeatcase:
                     break;
                 }
             }
-            g_sounds[k].filename[i] = '\0';
+            g_sounds[k]->filename[i] = '\0';
 
-            check_filename_case(g_sounds[k].filename);
-
-            C_GetNextValue(LABEL_DEFINE);
-            g_sounds[k].ps = g_scriptPtr[-1];
-            C_GetNextValue(LABEL_DEFINE);
-            g_sounds[k].pe = g_scriptPtr[-1];
-            C_GetNextValue(LABEL_DEFINE);
-            g_sounds[k].pr = g_scriptPtr[-1];
+            check_filename_case(g_sounds[k]->filename);
 
             C_GetNextValue(LABEL_DEFINE);
-            g_sounds[k].m = g_scriptPtr[-1] & ~SF_ONEINST_INTERNAL;
+            g_sounds[k]->ps = g_scriptPtr[-1];
+            C_GetNextValue(LABEL_DEFINE);
+            g_sounds[k]->pe = g_scriptPtr[-1];
+            C_GetNextValue(LABEL_DEFINE);
+            g_sounds[k]->pr = g_scriptPtr[-1];
+
+            C_GetNextValue(LABEL_DEFINE);
+            g_sounds[k]->m = g_scriptPtr[-1] & ~SF_ONEINST_INTERNAL;
             if (g_scriptPtr[-1] & SF_LOOP)
-                g_sounds[k].m |= SF_ONEINST_INTERNAL;
+                g_sounds[k]->m |= SF_ONEINST_INTERNAL;
 
             C_GetNextValue(LABEL_DEFINE);
-            g_sounds[k].vo = g_scriptPtr[-1];
+            g_sounds[k]->vo = g_scriptPtr[-1];
             g_scriptPtr -= 5;
 
-            g_sounds[k].volume = fix16_one;
-
-            if (k > g_highestSoundIdx)
-                g_highestSoundIdx = k;
+            g_sounds[k]->volume = fix16_one;
 
             if (g_dynamicSoundMapping && j >= 0 && (labeltype[j] & LABEL_DEFINE))
                 G_ProcessDynamicSoundMapping(label+(j<<6), k);

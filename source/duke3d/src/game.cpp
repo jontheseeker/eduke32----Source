@@ -5172,20 +5172,27 @@ static int32_t S_DefineAudioIfSupported(char **fn, const char *name)
 
 static int32_t S_DefineSound(int sndidx, const char *name, int minpitch, int maxpitch, int priority, int type, int distance, float volume)
 {
-    if ((unsigned)sndidx >= MAXSOUNDS || S_DefineAudioIfSupported(&g_sounds[sndidx].filename, name))
+    if (EDUKE32_PREDICT_FALSE((unsigned)sndidx >= MAXSOUNDS))
         return -1;
+
+    S_AllocIndexes(sndidx);
+
+    if (g_sounds[sndidx] == &nullsound)
+        g_sounds[sndidx] = (sound_t *)Xcalloc(1, sizeof(sound_t));
 
     auto &snd = g_sounds[sndidx];
 
-    snd.ps     = clamp(minpitch, INT16_MIN, INT16_MAX);
-    snd.pe     = clamp(maxpitch, INT16_MIN, INT16_MAX);
-    snd.pr     = priority & 255;
-    snd.m      = type & ~SF_ONEINST_INTERNAL;
-    snd.vo     = clamp(distance, INT16_MIN, INT16_MAX);
-    snd.volume = volume * fix16_one;
+    if (S_DefineAudioIfSupported(&snd->filename, name))
+        return -1;
+    snd->ps     = clamp(minpitch, INT16_MIN, INT16_MAX);
+    snd->pe     = clamp(maxpitch, INT16_MIN, INT16_MAX);
+    snd->pr     = priority & 255;
+    snd->m      = type & ~SF_ONEINST_INTERNAL;
+    snd->vo     = clamp(distance, INT16_MIN, INT16_MAX);
+    snd->volume = volume * fix16_one;
 
-    if (snd.m & SF_LOOP)
-        snd.m |= SF_ONEINST_INTERNAL;
+    if (snd->m & SF_LOOP)
+        snd->m |= SF_ONEINST_INTERNAL;
 
     return 0;
 }
@@ -5875,8 +5882,16 @@ static void G_Cleanup(void)
     for (i=MAXPLAYERS-1; i>=0; i--)
         Xfree(g_player[i].ps);
 
-    for (i=MAXSOUNDS-1; i>=0; i--)
-        Xfree(g_sounds[i].filename);
+    for (i=0;i<=g_highestSoundIdx;i++)
+    {
+        if (g_sounds[i] != &nullsound)
+        {
+            DO_FREE_AND_NULL(g_sounds[i]->filename);
+            DO_FREE_AND_NULL(g_sounds[i]);
+        }
+    }
+
+    DO_FREE_AND_NULL(g_sounds);
 
     if (label != (char *)&sprite[0]) Xfree(label);
     if (labelcode != (int32_t *)&sector[0]) Xfree(labelcode);
@@ -5894,6 +5909,7 @@ static void G_Cleanup(void)
 
     hash_loop(&h_dukeanim, G_FreeHashAnim);
     hash_free(&h_dukeanim);
+    inthash_free(&h_dsound);
 
     Duke_CommonCleanup();
 }

@@ -36,7 +36,7 @@ typedef struct {
 
 typedef struct {
     char *filename, *ptr;
-    int32_t  length, num, soundsiz;
+    int32_t num, soundsiz;
     SOUNDOWNER SoundOwner[4];
     int16_t ps,pe,vo;
     char pr,m;

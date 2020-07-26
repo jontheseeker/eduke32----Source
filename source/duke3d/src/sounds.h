@@ -35,7 +35,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 extern "C" {
 #endif
 
-#define MAXSOUNDS           4096
+#define MAXSOUNDS           16384
 #define MAXSOUNDINSTANCES   8
 #define LOUDESTVOLUME       111
 #define MUSIC_ID            (-65536)
@@ -51,16 +51,18 @@ typedef struct
 
 typedef struct
 {
-    char *    ptr, *filename;                // 8b/16b
-    int32_t   length, num, siz;              // 12b
-    float     volume;                        // 4b
+    char *     ptr;
+    char *     filename;
+    int32_t    num, siz;
+    float      volume;
     assvoice_t voices[MAXSOUNDINSTANCES];  // 64b
-    int16_t   ps, pe, vo;                    // 6b
-    char      pr, m;                         // 2b
+    int16_t    ps, pe, vo;
+    char       pr, m;
+    char       lock;
 } sound_t;
 
-extern char g_soundlocks[MAXSOUNDS];
-extern sound_t g_sounds[MAXSOUNDS];
+extern sound_t nullsound;
+extern sound_t **g_sounds;
 extern int32_t g_numEnvSoundsPlaying,g_highestSoundIdx;
 
 int A_CheckSoundPlaying(int spriteNum,int soundNum);
@@ -87,6 +89,7 @@ void S_ContinueLevelMusic(void);
 int S_PlaySound(int num);
 int S_PlaySound3D(int num, int spriteNum, const vec3_t *pos);
 void S_SoundShutdown(void);
+void S_AllocIndexes(int sndidx);
 void S_SoundStartup(void);
 void S_StopEnvSound(int sndNum,int sprNum);
 void S_StopAllSounds(void);
