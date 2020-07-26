@@ -159,20 +159,20 @@ int32_t S_PlaySound3D(int32_t num, int32_t i, const vec3_t *pos)
 //        ((g_sounds[num].m & SF_ADULT) && ud.lockout) ||
             SoundToggle == 0 ||
             g_sounds[num].num > 3 ||
-            FX_VoiceAvailable(g_sounds[num].pr) == 0)
+            FX_VoiceAvailable(g_sounds[num].priority) == 0)
         return -1;
 
-    if (g_sounds[num].m & SF_DTAG)
+    if (g_sounds[num].mode & SF_DTAG)
     {
         S_PlaySound(num);
         return 0;
     }
 
-    if (g_sounds[num].m & SF_TALK)
+    if (g_sounds[num].mode & SF_TALK)
     {
         for (j=0; j<MAXSOUNDS; j++)
 //            for (k=0; k<g_sounds[j].num; k++)
-            if ((g_sounds[j].num > 0) && (g_sounds[j].m & SF_TALK))
+            if ((g_sounds[j].num > 0) && (g_sounds[j].mode & SF_TALK))
                 return -1;
     }
 
@@ -184,11 +184,11 @@ int32_t S_PlaySound3D(int32_t num, int32_t i, const vec3_t *pos)
 
     sndist = FindDistance3D((cx-pos->x),(cy-pos->y),(cz-pos->z));
 
-    if (i >= 0 && (g_sounds[num].m & SF_GLOBAL) == 0 && PN(i) == MUSICANDSFX && SLT(i) < 999 && (sector[SECT(i)].lotag&0xff) < 9)
+    if (i >= 0 && (g_sounds[num].mode & SF_GLOBAL) == 0 && PN(i) == MUSICANDSFX && SLT(i) < 999 && (sector[SECT(i)].lotag&0xff) < 9)
         sndist = divscale14(sndist,(SHT(i)+1));
 
-    pitchs = g_sounds[num].ps;
-    pitche = g_sounds[num].pe;
+    pitchs = g_sounds[num].pitchMin;
+    pitche = g_sounds[num].pitchMax;
     cx = klabs(pitche-pitchs);
 
     if (cx)
@@ -199,7 +199,7 @@ int32_t S_PlaySound3D(int32_t num, int32_t i, const vec3_t *pos)
     }
     else pitch = pitchs;
 
-    sndist += g_sounds[num].vo;
+    sndist += g_sounds[num].distOffset;
     if (sndist < 0) sndist = 0;
     if (cs > -1 && sndist && PN(i) != MUSICANDSFX && !cansee(cx,cy,cz-(24<<8),cs,SX(i),SY(i),SZ(i)-(24<<8),SECT(i)))
         sndist += sndist>>5;
@@ -216,7 +216,7 @@ int32_t S_PlaySound3D(int32_t num, int32_t i, const vec3_t *pos)
             break;
         default:
     */
-    if (cursectnum > -1 && sector[cursectnum].lotag == 2 && (g_sounds[num].m & SF_TALK) == 0)
+    if (cursectnum > -1 && sector[cursectnum].lotag == 2 && (g_sounds[num].mode & SF_TALK) == 0)
         pitch = -768;
     if (sndist > 31444 && PN(i) != MUSICANDSFX)
         return -1;
@@ -244,23 +244,23 @@ int32_t S_PlaySound3D(int32_t num, int32_t i, const vec3_t *pos)
         else g_sounds[num].lock++;
     }
 
-    if (g_sounds[num].m & SF_GLOBAL) sndist = 0;
+    if (g_sounds[num].mode & SF_GLOBAL) sndist = 0;
 
     if (sndist < ((255-LOUDESTVOLUME)<<6))
         sndist = ((255-LOUDESTVOLUME)<<6);
 
-    if (g_sounds[num].m & SF_LOOP)
+    if (g_sounds[num].mode & SF_LOOP)
     {
         if (g_sounds[num].num > 0)
             return -1;
 
         voice = FX_Play(g_sounds[num].ptr, g_sounds[num].soundsiz, 0, -1,
-                                  pitch, sndist>>6, sndist>>6, 0, g_sounds[num].pr, fix16_one, num);
+                                  pitch, sndist>>6, sndist>>6, 0, g_sounds[num].priority, fix16_one, num);
     }
     else
     {
         voice = FX_Play3D(g_sounds[num].ptr, g_sounds[num].soundsiz, FX_ONESHOT,
-                              pitch, sndang>>4, sndist>>6, g_sounds[num].pr, fix16_one, num);
+                              pitch, sndang>>4, sndist>>6, g_sounds[num].priority, fix16_one, num);
     }
 
     if (voice >= FX_Ok)
@@ -286,10 +286,10 @@ void S_PlaySound(int32_t num)
         return;
     }
 //    if ((g_sounds[num].m & SF_ADULT) && ud.lockout) return;
-    if (FX_VoiceAvailable(g_sounds[num].pr) == 0) return;
+    if (FX_VoiceAvailable(g_sounds[num].priority) == 0) return;
 
-    pitchs = g_sounds[num].ps;
-    pitche = g_sounds[num].pe;
+    pitchs = g_sounds[num].pitchMin;
+    pitche = g_sounds[num].pitchMax;
     cx = klabs(pitche-pitchs);
 
     if (cx)
@@ -311,7 +311,7 @@ void S_PlaySound(int32_t num)
         else g_sounds[num].lock++;
     }
 
-    if (g_sounds[num].m & SF_LOOP)
+    if (g_sounds[num].mode & SF_LOOP)
     {
         voice = FX_Play(g_sounds[num].ptr, g_sounds[num].soundsiz, 0, -1,
                                   pitch,LOUDESTVOLUME,LOUDESTVOLUME,LOUDESTVOLUME,g_sounds[num].soundsiz, fix16_one, num);
@@ -319,7 +319,7 @@ void S_PlaySound(int32_t num)
     else
     {
         voice = FX_Play3D(g_sounds[num].ptr, g_sounds[num].soundsiz, FX_ONESHOT,
-                              pitch,0,255-LOUDESTVOLUME,g_sounds[num].pr, fix16_one, num);
+                              pitch,0,255-LOUDESTVOLUME,g_sounds[num].priority, fix16_one, num);
     }
 
     if (voice >= FX_Ok)
@@ -402,10 +402,10 @@ void S_Update(void)
             sndang = 2048 + ca - getangle(cx-sx,cy-sy);
             sndang &= 2047;
             sndist = FindDistance3D((cx-sx),(cy-sy),(cz-sz));
-            if (i >= 0 && (g_sounds[j].m & SF_GLOBAL) == 0 && PN(i) == MUSICANDSFX && SLT(i) < 999 && (sector[SECT(i)].lotag&0xff) < 9)
+            if (i >= 0 && (g_sounds[j].mode & SF_GLOBAL) == 0 && PN(i) == MUSICANDSFX && SLT(i) < 999 && (sector[SECT(i)].lotag&0xff) < 9)
                 sndist = divscale14(sndist,(SHT(i)+1));
 
-            sndist += g_sounds[j].vo;
+            sndist += g_sounds[j].distOffset;
             if (sndist < 0) sndist = 0;
 
             if (cs > -1 && sndist && PN(i) != MUSICANDSFX && !cansee(cx,cy,cz-(24<<8),cs,sx,sy,sz-(24<<8),SECT(i)))
@@ -431,7 +431,7 @@ void S_Update(void)
 //            }
 
             if (g_sounds[j].ptr == 0 && S_LoadSound(j) == 0) continue;
-            if (g_sounds[j].m & SF_GLOBAL) sndist = 0;
+            if (g_sounds[j].mode & SF_GLOBAL) sndist = 0;
 
             if (sndist < ((255-LOUDESTVOLUME)<<6))
                 sndist = ((255-LOUDESTVOLUME)<<6);
@@ -448,7 +448,7 @@ void S_Callback(intptr_t num)
 
     if (k > 0)
     {
-        if ((g_sounds[num].m & SF_GLOBAL) == 0)
+        if ((g_sounds[num].mode & SF_GLOBAL) == 0)
             for (j=0; j<k; j++)
             {
                 i = g_sounds[num].SoundOwner[j].ow;
@@ -521,5 +521,5 @@ int32_t S_InvalidSound(int32_t num)
 
 int32_t S_SoundFlags(int32_t num)
 {
-    return g_sounds[num].m;
+    return g_sounds[num].mode;
 }

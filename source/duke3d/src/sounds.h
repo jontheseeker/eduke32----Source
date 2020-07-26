@@ -51,14 +51,15 @@ typedef struct
 
 typedef struct
 {
+    int16_t    playing;
+    assvoice_t voices[MAXSOUNDINSTANCES];
     char *     ptr;
-    char *     filename;
-    int32_t    num, siz;
+    int32_t    siz;
     float      volume;
-    assvoice_t voices[MAXSOUNDINSTANCES];  // 64b
-    int16_t    ps, pe, vo;
-    char       pr, m;
+    int16_t    pitchMin, pitchMax, distOffset;
+    char       priority, mode;
     char       lock;
+    char *     filename;
 } sound_t;
 
 extern sound_t nullsound;
@@ -99,10 +100,7 @@ void S_ChangeSoundPitch(int soundNum, int spriteNum, int pitchoffset);
 int32_t S_GetMusicPosition(void);
 void S_SetMusicPosition(int32_t position);
 
-static inline bool S_IsAmbientSFX(int spriteNum)
-{
-    return (sprite[spriteNum].picnum == MUSICANDSFX && sprite[spriteNum].lotag < 999);
-}
+static FORCE_INLINE bool S_IsAmbientSFX(int const spriteNum) { return (sprite[spriteNum].picnum == MUSICANDSFX && sprite[spriteNum].lotag < 999); }
 
 #ifdef __cplusplus
 }

@@ -5825,19 +5825,19 @@ repeatcase:
             check_filename_case(g_sounds[k]->filename);
 
             C_GetNextValue(LABEL_DEFINE);
-            g_sounds[k]->ps = g_scriptPtr[-1];
+            g_sounds[k]->pitchMin = g_scriptPtr[-1];
             C_GetNextValue(LABEL_DEFINE);
-            g_sounds[k]->pe = g_scriptPtr[-1];
+            g_sounds[k]->pitchMax = g_scriptPtr[-1];
             C_GetNextValue(LABEL_DEFINE);
-            g_sounds[k]->pr = g_scriptPtr[-1];
+            g_sounds[k]->priority = g_scriptPtr[-1];
 
             C_GetNextValue(LABEL_DEFINE);
-            g_sounds[k]->m = g_scriptPtr[-1] & ~SF_ONEINST_INTERNAL;
+            g_sounds[k]->mode = g_scriptPtr[-1] & ~SF_ONEINST_INTERNAL;
             if (g_scriptPtr[-1] & SF_LOOP)
-                g_sounds[k]->m |= SF_ONEINST_INTERNAL;
+                g_sounds[k]->mode |= SF_ONEINST_INTERNAL;
 
             C_GetNextValue(LABEL_DEFINE);
-            g_sounds[k]->vo = g_scriptPtr[-1];
+            g_sounds[k]->distOffset = g_scriptPtr[-1];
             g_scriptPtr -= 5;
 
             g_sounds[k]->volume = fix16_one;

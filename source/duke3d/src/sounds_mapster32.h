@@ -38,8 +38,8 @@ typedef struct {
     char *filename, *ptr;
     int32_t num, soundsiz;
     SOUNDOWNER SoundOwner[4];
-    int16_t ps,pe,vo;
-    char pr,m;
+    int16_t pitchMin,pitchMax,distOffset;
+    char priority,mode;
     char lock;
     char *definedname;  // new
 } sound_t;

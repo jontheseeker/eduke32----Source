@@ -66,7 +66,7 @@ int A_CallSound(int sectNum, int spriteNum)
 
         if (T1(SFXsprite) == 0)
         {
-            if ((g_sounds[soundNum]->m & (SF_GLOBAL|SF_DTAG)) != SF_GLOBAL)
+            if ((g_sounds[soundNum]->mode & (SF_GLOBAL|SF_DTAG)) != SF_GLOBAL)
             {
                 if (soundNum)
                 {
@@ -87,7 +87,7 @@ int A_CallSound(int sectNum, int spriteNum)
             if (SHT(SFXsprite))
                 A_PlaySound(SHT(SFXsprite), spriteNum);
 
-            if ((g_sounds[soundNum]->m & SF_LOOP) || (SHT(SFXsprite) && SHT(SFXsprite) != soundNum))
+            if ((g_sounds[soundNum]->mode & SF_LOOP) || (SHT(SFXsprite) && SHT(SFXsprite) != soundNum))
                 S_StopEnvSound(soundNum, T6(SFXsprite));
 
             T6(SFXsprite) = spriteNum;
@@ -1488,7 +1488,7 @@ int P_ActivateSwitch(int playerNum, int wallOrSprite, int switchType)
                 S_PlaySound3D(SWITCH_ON, (switchType == SWITCH_SPRITE) ? wallOrSprite : g_player[playerNum].ps->i, &davector);
             else if (hitag)
             {
-                if (switchType == SWITCH_SPRITE && (g_sounds[hitag]->m & SF_TALK) == 0)
+                if (switchType == SWITCH_SPRITE && (g_sounds[hitag]->mode & SF_TALK) == 0)
                     S_PlaySound3D(hitag, wallOrSprite, &davector);
                 else
                     A_PlaySound(hitag, g_player[playerNum].ps->i);
@@ -1991,7 +1991,7 @@ void A_DamageObject_Duke3D(int spriteNum, int const dmgSrc)
             sprite[dmgSrc].xvel = (sprite[spriteNum].xvel>>1)+(sprite[spriteNum].xvel>>2);
             sprite[dmgSrc].ang -= (SA(spriteNum)<<1)+1024;
             SA(spriteNum) = getangle(SX(spriteNum)-sprite[dmgSrc].x,SY(spriteNum)-sprite[dmgSrc].y)-512;
-            if (g_sounds[POOLBALLHIT]->num < 2)
+            if (g_sounds[POOLBALLHIT]->playing < 2)
                 A_PlaySound(POOLBALLHIT, spriteNum);
         }
         else

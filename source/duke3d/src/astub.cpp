@@ -1701,23 +1701,23 @@ static int32_t compare_sounds_f(int16_t k1, int16_t k2)
 }
 static int32_t compare_sounds_1(int16_t k1, int16_t k2)
 {
-    return (g_sounds[k2].m&1) - (g_sounds[k1].m&1);
+    return (g_sounds[k2].mode&1) - (g_sounds[k1].mode&1);
 }
 static int32_t compare_sounds_2(int16_t k1, int16_t k2)
 {
-    return (g_sounds[k2].m&2) - (g_sounds[k1].m&2);
+    return (g_sounds[k2].mode&2) - (g_sounds[k1].mode&2);
 }
 static int32_t compare_sounds_3(int16_t k1, int16_t k2)
 {
-    return (g_sounds[k2].m&4) - (g_sounds[k1].m&4);
+    return (g_sounds[k2].mode&4) - (g_sounds[k1].mode&4);
 }
 static int32_t compare_sounds_4(int16_t k1, int16_t k2)
 {
-    return (g_sounds[k2].m&8) - (g_sounds[k1].m&8);
+    return (g_sounds[k2].mode&8) - (g_sounds[k1].mode&8);
 }
 static int32_t compare_sounds_5(int16_t k1, int16_t k2)
 {
-    return (g_sounds[k2].m&16) - (g_sounds[k1].m&16);
+    return (g_sounds[k2].mode&16) - (g_sounds[k1].mode&16);
 }
 
 
@@ -1927,9 +1927,9 @@ static void SoundDisplay(void)
                 Bsprintf(disptext,
                          "%4d .................... ................ %6d:%-6d %3d %c%c%c%c%c %6d",
                          //   5678901234567890X23456789012345678901234567
-                         k, snd->ps, snd->pe, snd->pr,
-                         snd->m&1 ? 'R':'-', snd->m&2 ? 'M':'-', snd->m&4 ? 'D':'-',
-                         snd->m&8 ? 'P':'-', snd->m&16 ? 'G':'-', snd->vo);
+                         k, snd->pitchMin, snd->pitchMax, snd->priority,
+                         snd->mode&1 ? 'R':'-', snd->mode&2 ? 'M':'-', snd->mode&4 ? 'D':'-',
+                         snd->mode&8 ? 'P':'-', snd->mode&16 ? 'G':'-', snd->distOffset);
                 for (l = Bsnprintf(disptext+5, 20, "%s", snd->definedname); l<20; l++)
                     disptext[5+l] = ' ';
                 if (snd->filename)
@@ -2030,12 +2030,12 @@ static void M32_MoveFX(void)
             if (s->lotag < 999 && (unsigned)sector[s->sectnum].lotag < 9 &&
                     AmbienceToggle && sector[s->sectnum].floorz != sector[s->sectnum].ceilingz)
             {
-                if ((g_sounds[s->lotag].m & SF_MSFX))
+                if ((g_sounds[s->lotag].mode & SF_MSFX))
                 {
                     x = dist((spritetype *)&pos,s);
-                    if (x < ht && !testbit(g_ambiencePlaying, i) && FX_VoiceAvailable(g_sounds[s->lotag].pr-1))
+                    if (x < ht && !testbit(g_ambiencePlaying, i) && FX_VoiceAvailable(g_sounds[s->lotag].priority-1))
                     {
-                        char om = g_sounds[s->lotag].m;
+                        char om = g_sounds[s->lotag].mode;
                         if (g_numEnvSoundsPlaying == NumVoices)
                         {
                             for (j = headspritestat[0]; j >= 0; j = nextspritestat[j])
@@ -2050,9 +2050,9 @@ static void M32_MoveFX(void)
                             }
                             if (j == -1) continue;
                         }
-                        g_sounds[s->lotag].m |= SF_LOOP;
+                        g_sounds[s->lotag].mode |= SF_LOOP;
                         A_PlaySound(s->lotag,i);
-                        g_sounds[s->lotag].m = om;
+                        g_sounds[s->lotag].mode = om;
                         setbit(g_ambiencePlaying, i);
                     }
                     if (x >= ht && testbit(g_ambiencePlaying, i))
@@ -9850,11 +9850,11 @@ BAD:
                 initprintf("warning: duplicate sound #%d, overwriting\n", sndnum);
 
             g_sounds[sndnum].definedname = definedname;  // we want to keep it for display purposes
-            g_sounds[sndnum].ps = ps;
-            g_sounds[sndnum].pe = pe;
-            g_sounds[sndnum].pr = pr;
-            g_sounds[sndnum].m = m;
-            g_sounds[sndnum].vo = vo;
+            g_sounds[sndnum].pitchMin = ps;
+            g_sounds[sndnum].pitchMax = pe;
+            g_sounds[sndnum].priority = pr;
+            g_sounds[sndnum].mode = m;
+            g_sounds[sndnum].distOffset = vo;
             if (!duplicate)
             {
                 g_sndnum[g_numsounds] = g_definedsndnum[g_numsounds] = sndnum;

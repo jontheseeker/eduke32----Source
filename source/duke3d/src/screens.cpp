@@ -766,9 +766,9 @@ static void G_ShowCacheLocks(void)
 
     for (int i=0; i<=g_highestSoundIdx; i++)
     {
-        if (g_sounds[i]->num > 0)
+        if (g_sounds[i]->playing > 0)
         {
-            for (int j = 0, n = g_sounds[i]->num; j < n; j++)
+            for (int j = 0, n = g_sounds[i]->playing; j < n; j++)
             {
                 if (k >= ydim-12)
                     return;

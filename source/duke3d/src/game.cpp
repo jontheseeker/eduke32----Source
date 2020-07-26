@@ -5184,15 +5184,16 @@ static int32_t S_DefineSound(int sndidx, const char *name, int minpitch, int max
 
     if (S_DefineAudioIfSupported(&snd->filename, name))
         return -1;
-    snd->ps     = clamp(minpitch, INT16_MIN, INT16_MAX);
-    snd->pe     = clamp(maxpitch, INT16_MIN, INT16_MAX);
-    snd->pr     = priority & 255;
-    snd->m      = type & ~SF_ONEINST_INTERNAL;
-    snd->vo     = clamp(distance, INT16_MIN, INT16_MAX);
-    snd->volume = volume * fix16_one;
 
-    if (snd->m & SF_LOOP)
-        snd->m |= SF_ONEINST_INTERNAL;
+    snd->pitchMin   = clamp(minpitch, INT16_MIN, INT16_MAX);
+    snd->pitchMax   = clamp(maxpitch, INT16_MIN, INT16_MAX);
+    snd->priority   = priority & 255;
+    snd->mode       = type & ~SF_ONEINST_INTERNAL;
+    snd->distOffset = clamp(distance, INT16_MIN, INT16_MAX);
+    snd->volume     = volume * fix16_one;
+
+    if (snd->mode & SF_LOOP)
+        snd->mode |= SF_ONEINST_INTERNAL;
 
     return 0;
 }
