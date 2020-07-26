@@ -40,7 +40,7 @@ static bool MusicPaused;
 static bool SoundPaused;
 
 static uint32_t freeSlotQueue[MAXVOICES];
-static std::atomic<uint32_t> freeSlotQueueIndex, freeSlotsPendingCnt;
+static std::atomic<uint32_t> freeSlotWritePos, freeSlotReadPos;
 
 static inline void S_SetProperties(assvoice_t *snd, int const owner, int const voice, int const dist, int const clock)
 {
@@ -402,19 +402,14 @@ void S_StopMusic(void)
 
 void S_Cleanup(void)
 {
-    static uint32_t ldpos = 0;
+    static uint32_t lastReadPos;
+    uint32_t readPos = freeSlotReadPos.load(std::memory_order_consume);
 
-    while (freeSlotsPendingCnt)
+    while (readPos - lastReadPos)
     {
-        --freeSlotsPendingCnt;
-
-        uint32_t num = freeSlotQueue[++ldpos & (MAXVOICES-1)];
-#ifdef DEBUGGINGAIDS
-        Bassert(num != 0xdeadbeef);
-        freeSlotQueue[ldpos & (MAXVOICES-1)] = 0xdeadbeef;
-#endif
+        uint32_t num = freeSlotQueue[++lastReadPos & (MAXVOICES-1)];
         // negative index is RTS playback
-        if ((int32_t)num < 0)
+        if (EDUKE32_PREDICT_FALSE((int32_t)num < 0))
         {
             int const rtsindex = klabs((int32_t)num);
 
@@ -990,11 +985,11 @@ void S_Update(void)
 // this is essentially a multiple producer single consumer queue
 void S_Callback(intptr_t num)
 {
-    if ((int32_t)num == MUSIC_ID)
+    if (EDUKE32_PREDICT_FALSE((int32_t)num == MUSIC_ID))
         return;
 
-    freeSlotQueue[++freeSlotQueueIndex & (MAXVOICES-1)] = (uint32_t)num;
-    freeSlotsPendingCnt++;
+    freeSlotQueue[++freeSlotWritePos & (MAXVOICES-1)] = (uint32_t)num;
+    freeSlotReadPos++;
 }
 
 void S_ClearSoundLocks(void)

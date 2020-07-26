@@ -38,7 +38,7 @@ extern "C" {
 #define MAXSOUNDS           4096
 #define MAXSOUNDINSTANCES   8
 #define LOUDESTVOLUME       111
-#define MUSIC_ID            -65536
+#define MUSIC_ID            (-65536)
 #define MAXVOICES           128
 
 typedef struct
