@@ -324,9 +324,9 @@ bool sjson_check(const sjson_node* node, char errmsg[256]);
 #ifndef sjson_malloc
 #	include <stdlib.h>
 #	include <string.h>
-#	define sjson_malloc(user, size)		  ((UNREFERENCED_PARAMETER(user)), Bmalloc(size))
-#	define sjson_free(user, ptr)		  ((UNREFERENCED_PARAMETER(user)), Bfree(ptr))
-#	define sjson_realloc(user, ptr, size) ((UNREFERENCED_PARAMETER(user)), Brealloc(ptr, size))
+#	define sjson_malloc(user, size)		  ((UNREFERENCED_PARAMETER(user)), Xmalloc(size))
+#	define sjson_free(user, ptr)		  ((UNREFERENCED_PARAMETER(user)), Xfree(ptr))
+#	define sjson_realloc(user, ptr, size) ((UNREFERENCED_PARAMETER(user)), Xrealloc(ptr, size))
 #endif
 
 #ifndef sjson_assert

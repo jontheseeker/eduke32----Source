@@ -833,7 +833,7 @@ int MV_Init(int soundcard, int MixRate, int Voices, int numchannels, void *initd
     MV_Voices->Init();
 
     LL::Reset((VoiceNode*) &VoiceList);
-    MV_Handles = (VoiceNode **)Bcalloc(Voices, sizeof(intptr_t));
+    MV_Handles = (VoiceNode **)Xcalloc(Voices, sizeof(intptr_t));
 #ifdef ASS_REVERSESTEREO
     MV_SetReverseStereo(FALSE);
 #endif

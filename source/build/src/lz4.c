@@ -176,9 +176,9 @@
 *  Memory routines
 **************************************/
 #include "compat.h"
-#define ALLOC(s)          Bmalloc(s)
-#define ALLOC_AND_ZERO(s) Bcalloc(1,s)
-#define FREEMEM(p)        Bfree(p)
+#define ALLOC(s)          Xmalloc(s)
+#define ALLOC_AND_ZERO(s) Xcalloc(1,s)
+#define FREEMEM(p)        Xfree(p)
 #include <string.h>   /* memset, memcpy */
 #define MEM_INIT(p,v,s)   memset((p),(v),(s))
 

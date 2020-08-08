@@ -9892,7 +9892,7 @@ static int32_t loadconsounds(const char *fn)
     for (char * m : g_scriptModules)
     {
         parseconsounds_include(m, NULL, "null");
-        Bfree(m);
+        Xfree(m);
     }
     g_scriptModules.clear();
 

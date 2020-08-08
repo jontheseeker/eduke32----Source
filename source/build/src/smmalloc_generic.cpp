@@ -19,63 +19,59 @@
 // 	LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // 	THE SOFTWARE.
-#include <malloc.h>
+#include "compat.h"
 #include "smmalloc.h"
 
 
 sm::GenericAllocator::TInstance sm::GenericAllocator::Invalid()
 {
-	return nullptr;
+    return nullptr;
 }
 
 bool sm::GenericAllocator::IsValid(TInstance instance)
 {
-	SMMALLOC_UNUSED(instance);
-	return true;
+    SMMALLOC_UNUSED(instance);
+    return true;
 }
 
 sm::GenericAllocator::TInstance sm::GenericAllocator::Create()
 {
-	return nullptr;
+    return nullptr;
 }
 
 void sm::GenericAllocator::Destroy(sm::GenericAllocator::TInstance instance)
 {
-	SMMALLOC_UNUSED(instance);
+    SMMALLOC_UNUSED(instance);
 }
 
 void* sm::GenericAllocator::Alloc(sm::GenericAllocator::TInstance instance, size_t bytesCount, size_t alignment)
 {
-	SMMALLOC_UNUSED(instance);
-	if (alignment < 16)
-	{
-		alignment = 16;
-	}
-	return _aligned_malloc(bytesCount, alignment);
+    SMMALLOC_UNUSED(instance);
+    if (alignment < 16)
+        alignment = 16;
+    return Baligned_alloc(alignment, bytesCount);
 }
 
 void sm::GenericAllocator::Free(sm::GenericAllocator::TInstance instance, void* p)
 {
-	SMMALLOC_UNUSED(instance);
-	_aligned_free(p);
+    SMMALLOC_UNUSED(instance);
+    Baligned_free(p);
 }
 
 void* sm::GenericAllocator::Realloc(sm::GenericAllocator::TInstance instance, void* p, size_t bytesCount, size_t alignment)
 {
-	SMMALLOC_UNUSED(instance);
-	return _aligned_realloc(p, bytesCount, alignment);
+    SMMALLOC_UNUSED(instance);
+    if (alignment < 16)
+        alignment = 16;
+    return Baligned_realloc(p, alignment, bytesCount);
 }
 
 size_t sm::GenericAllocator::GetUsableSpace(sm::GenericAllocator::TInstance instance, void* p)
 {
-	SMMALLOC_UNUSED(instance);
-	size_t alignment = DetectAlignment(p);
-	#ifdef __GNUC__
-		if (alignment < sizeof(void*))
-			alignment = sizeof(void*);
+    SMMALLOC_UNUSED(instance);
+    size_t alignment = DetectAlignment(p);
+    if (alignment < sizeof(void*))
+        alignment = sizeof(void*);
 
-		return _msize(p) - alignment - sizeof(void*);
-	#else
-		return _aligned_msize(p, alignment, 0);
-	#endif
+    return _msize(p) - alignment - sizeof(void*);
 }

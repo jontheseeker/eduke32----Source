@@ -35,11 +35,11 @@ PoolAllocator::PoolAllocator(size_t const totalSize, size_t const chunkSize) : A
 
 void PoolAllocator::Init()
 {
-    m_start_ptr = Bmalloc(m_totalSize);
+    m_start_ptr = Xmalloc(m_totalSize);
     this->Reset();
 }
 
-PoolAllocator::~PoolAllocator() { Bfree(m_start_ptr); }
+PoolAllocator::~PoolAllocator() { Xfree(m_start_ptr); }
 
 void *PoolAllocator::Allocate(size_t const allocationSize, size_t const)
 {

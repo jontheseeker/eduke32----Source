@@ -753,7 +753,7 @@ int app_main(int argc, char const * const * argv)
         initprintf("Definitions file \"%s\" loaded.\n",defsfile);
 
     for (char * m : g_defModules)
-        Bfree(m);
+        Xfree(m);
     g_defModules.clear();
 
     if (enginePostInit())
@@ -803,7 +803,7 @@ int app_main(int argc, char const * const * argv)
         initprintf("There was an error loading the sprite clipping map (status %d).\n", k);
 
     for (char * f : g_clipMapFiles)
-        Bfree(f);
+        Xfree(f);
     g_clipMapFiles.clear();
 #endif
 
